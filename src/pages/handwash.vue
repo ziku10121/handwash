@@ -105,6 +105,7 @@
 import { mqtt } from 'vue-mqtt';
 import axios from 'axios';
 import MarqueeText from "vue-marquee-text-component";
+import {getLocalIP, getPublicIP} from "../../public/js/getIP";
 
 export default {
   name: 'HandWash',
@@ -117,6 +118,7 @@ export default {
       show_fever:false,
       show_temp: true,
       //mqtt
+      ip:'',
       temp_obj:{},    //temp
       //database
       temp_range:{},  //temp range
@@ -131,31 +133,43 @@ export default {
       countdown:false,
       v1:15,
 
+      url_getId:"http://192.168.0.105:1880/get_data",
       url:"https://raw.githubusercontent.com/howardweng/quasar01/main/database.json",
       url_104:"http://192.168.0.104:9100/database.json"
     }
   },
   async created () {
-    // 抓取初始值
-    var status = await axios.get(this.url)
-    .then((res)=>{
-      let database = res.data;
-      // console.log('res:',database);
-      // this.debugMethod('res:'+JSON.stringify(database)+'/////');
-      this.marq_obj = database.marquee;
-      this.temp_range = database.temp_range;
-      this.top_video = database.top_video;
-      this.center_video = database.center_video;
-      this.heat_sound = database.heat_sound;
-      this.bottomSrc = database.bottom_img[0].src;
-      return 'ok';
-    })
-    .catch((err)=>{
-      // this.debugMethod('res:'+err+'/////');
-      console.error(err);
+    let localIP = await getLocalIP().then((ipAddr)=>{
+      this.debugMethod('Local IP:'+ipAddr+'，');
+      return ipAddr;
+    });
+
+    let publicIP = await getPublicIP().then((ipAddr)=>{
+      this.debugMethod('Public IP:'+ipAddr+',');
+      return ipAddr;
     })
 
-    if(status =='ok'){
+    // 抓取初始值
+    var status = await axios.get(this.url)
+      .then((res)=>{
+        let database = res.data;
+        // console.log('res:',database);
+        this.debugMethod('res:'+JSON.stringify(database)+'/////');
+        this.marq_obj = database.marquee;
+        this.temp_range = database.temp_range;
+        this.top_video = database.top_video;
+        this.center_video = database.center_video;
+        this.heat_sound = database.heat_sound;
+        this.bottomSrc = database.bottom_img[0].src;
+        return 'ok';
+      })
+      .catch((err)=>{
+        this.debugMethod('res:'+err+'/////');
+        console.error(err);
+      })
+
+    if(localIP && publicIP && status =='ok'){
+      this.ip = publicIP+'*'+localIP;
       console.log('mqtt');
       this.subscribe_topic = "handwash/#";
       this.$mqtt.subscribe(this.subscribe_topic);
@@ -163,10 +177,9 @@ export default {
   },
   mqtt: {
     'handwash/#' (data, topic) {
-
       this.object = JSON.parse(data)
       // console.log('topic: ', topic, ' this.object: ', this.object)
-      if (topic === "handwash/" + 12345 + "/temp") {
+      if (topic === "handwash/" + this.ip + "/temp") {
         let tempObj = JSON.parse(data)
         // console.log('tempdata',tempObj);
         this.temp_obj = tempObj;

@@ -9,5 +9,7 @@
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
     <allow-navigation href="about:*" />
+    <preference name="Fullscreen" value="true" />
     <icon src="res/handwash.png" />
+    <access origin="*" />
 </widget>
