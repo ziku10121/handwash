@@ -7,7 +7,7 @@ export default ({ Vue }) => {
     password:"abc123",
     clientId: ('WebClient-' + parseInt(Math.random() * 100000)),
   };
-  let url= 'wss://mk100.frrut.net:9000/mqtt';
-  // let url = 'http://192.168.0.104:9000/mqtt';
+  // let url= 'wss://mk100.frrut.net:9000/mqtt';
+  let url = 'http://192.168.0.101:9000/mqtt';
   Vue.use(VueMqtt, url, options);
 }

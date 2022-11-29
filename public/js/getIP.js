@@ -8,11 +8,11 @@ export function getLocalIP(){
         if (!RTCPeerConnection) {
         reject('Your browser does not support this API');
         }
-        
+
         var rtc = new RTCPeerConnection({iceServers:[]});
         var addrs = {};
         addrs["0.0.0.0"] = false;
-        
+
         function grepSDP(sdp) {
             var hosts = [];
             var finalIP = '';
@@ -32,11 +32,11 @@ export function getLocalIP(){
             });
             return finalIP;
         }
-        
+
         if (1 || window.mozRTCPeerConnection) {      // FF [and now Chrome!] needs a channel/stream to proceed
             rtc.createDataChannel('', {reliable:false});
         };
-        
+
         rtc.onicecandidate = function (evt) {
             // convert the candidate to SDP so we can run it through our general parser
             // see https://twitter.com/lancestout/status/525796175425720320 for details
@@ -55,7 +55,7 @@ export function getPublicIP(){
     return new Promise(function(resolve, reject) {
         axios.get('https://api.ipify.org?format=json')
             .then((res)=>{
-                console.log('get public ip:', res.data);
+                // console.log('get public ip:', res.data);
                 resolve(res.data.ip);
             })
             .catch((err)=>{

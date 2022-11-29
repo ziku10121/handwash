@@ -6,51 +6,22 @@
       <marquee-text class="marquee" :duration="marq_obj.duration">{{marq_obj.text}}</marquee-text>
     </div>
     <!-- Temperature  -->
-    <q-dialog v-model="show_temp" seamless position="top" >
-      <q-card class="temp_card" >
-        <q-card-section style="padding:6px 16px">
-          <div class="row justify-between">
-            <div class="row col items-center">
-              <!-- <div class="col"><input type="text" v-model="v1"/></div> -->
-              <div class="col-auto text-center">
-                <!-- <button class="muteBtn">toggleMuted</button> -->
-                <!-- env icon -->
-                <q-icon v-if="temp_obj.event=='env'" class="text-primary" size="30px" name="filter_drama" /> 
-                <!-- human icon -->
-                <q-icon v-if="temp_obj.event!='env'" :class="temp_obj.event!='fever'?(temp_obj.event=='env'?'text-primary':'text-green-6'):'text-negative'" size="30px" name="accessibility" /> 
-              </div>
-              <div class="col text-center">
-                <!-- {{temp}} -->
-                <a :class="temp_obj.event!='fever'? (temp_obj.event=='env'?'text-primary':'text-green-6'):'text-negative'" style="font-size: 32px;">{{temp_obj.temp}}</a>
-                <a :class="temp_obj.event!='fever'? (temp_obj.event=='env'?'text-primary':'text-green-6'):'text-negative'" style="font-size: 18px;">°C</a>
-              </div>  
-            </div>
-            <div class="column col-4 items-end">
-              <div v-if="temp_obj.event=='env'" class="col text-primary temp-state">Env</div>
-              <div v-if="temp_obj.event=='normal'" class="col text-green-6 temp-state">Normal</div>
-              <div v-if="temp_obj.event=='fever'" class="col text-negative temp-state">Fever</div>
-
-              <div class="col text-right">
-                <a v-if="temp_range" class="text-grey" style="font-size: 10px;">
-                  {{temp_range.low}}~{{temp_range.high}}
-                </a>
-              </div>
-            </div>
-          </div>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+    <Temperature v-if="show_temp" :temp_range="temp_range" :temp_obj="temp_obj"></Temperature>
     <!-- VIDEO / PNG -->
     <div class="column" :style="'height:'+(100-v1)+'vh'">
       <div class="col-auto">
         <div class="row">
+          <!-- Top Img -->
+          <div class="col-lg-6 col-12">
+            <Photo :height="1215" :autoplay="img_interval" :sources="top_img"></Photo>
+          </div>
           <!-- Top Video -->
-          <div v-if="top_video" class="col-lg-6 col-12">
+          <!-- <div v-if="top_video" class="col-lg-6 col-12">
             <q-media-player
               type="video"
               background-color="black"
               :muted="false"
-              :autoplay="true"
+              :autoplay="2500"
               :sources="top_video"
               :loop="true"
               :disabled-seek="true"
@@ -58,22 +29,22 @@
               :no-controls="true"
               ref="qmp_top_video"
             ></q-media-player>
-          </div>
-          <div v-if="center_video" class="col-lg-6 col-12">
-            <!-- Center Video -->
-              <q-media-player
-                type="video"
-                background-color="black"
-                :muted="true"
-                :autoplay="true"
-                :sources="center_video"
-                :loop="true"
-                :disabled-seek="true"
-                :hide-volume-btn="true"
-                :no-controls="true"
-                ref="qmp_center_video"
-              ></q-media-player>
-          </div>
+          </div> -->
+          <!-- Center Video -->
+          <!-- <div v-if="center_video" class="col-lg-6 col-12">
+            <q-media-player
+              type="video"
+              background-color="black"
+              :muted="true"
+              :autoplay="true"
+              :sources="center_video"
+              :loop="true"
+              :disabled-seek="true"
+              :hide-volume-btn="true"
+              :no-controls="true"
+              ref="qmp_center_video"
+            ></q-media-player>
+          </div> -->
         </div>
       </div>
       <div class="col">
@@ -106,16 +77,20 @@ import { mqtt } from 'vue-mqtt';
 import axios from 'axios';
 import MarqueeText from "vue-marquee-text-component";
 import {getLocalIP, getPublicIP} from "../../public/js/getIP";
+import Temperature from "../components/temperature.vue";
+import Photo from "../components/photo.vue";
 
 export default {
   name: 'HandWash',
   components:{
     MarqueeText,
+    Temperature,
+    Photo
   },
   data () {
     return {
       debugTxt:"",
-      show_fever:false,
+
       show_temp: true,
       //mqtt
       ip:'',
@@ -127,33 +102,35 @@ export default {
       center_video:[],
       heat_sound:[],
       bottomSrc:'',
-
+      top_img:[],
       intervalId: null, //data 定義一個定時器id
       fever_duration: 5,
       countdown:false,
-      v1:15,
 
-      url_getId:"http://192.168.0.105:1880/get_data",
+      img_interval:10000,
+      v1:15,            //Marquee高度比例
+
       url:"https://raw.githubusercontent.com/howardweng/quasar01/main/database.json",
-      url_104:"http://192.168.0.104:9100/database.json"
+      url_getId:"http://192.168.0.105:1880/get_data",
+      local_url:"http://192.168.0.101:9100/database.json"
     }
   },
   async created () {
-    let localIP = await getLocalIP().then((ipAddr)=>{
-      this.debugMethod('Local IP:'+ipAddr+'，');
-      return ipAddr;
-    });
+    // let localIP = await getLocalIP().then((ipAddr)=>{
+    //   // this.debugMethod('Local IP:'+ipAddr+'，');
+    //   return ipAddr;
+    // });
 
-    let publicIP = await getPublicIP().then((ipAddr)=>{
-      this.debugMethod('Public IP:'+ipAddr+',');
-      return ipAddr;
-    })
-
+    // let publicIP = await getPublicIP().then((ipAddr)=>{
+    //   // this.debugMethod('Public IP:'+ipAddr+',');
+    //   return ipAddr;
+    // })
+    
     // 抓取初始值
-    var status = await axios.get(this.url)
+    var status = await axios.get(this.local_url)
       .then((res)=>{
         let database = res.data;
-        // console.log('res:',database);
+        console.log('res:',database);
         this.debugMethod('res:'+JSON.stringify(database)+'/////');
         this.marq_obj = database.marquee;
         this.temp_range = database.temp_range;
@@ -161,6 +138,7 @@ export default {
         this.center_video = database.center_video;
         this.heat_sound = database.heat_sound;
         this.bottomSrc = database.bottom_img[0].src;
+        this.top_img = database.top_img;
         return 'ok';
       })
       .catch((err)=>{
@@ -168,9 +146,12 @@ export default {
         console.error(err);
       })
 
-    if(localIP && publicIP && status =='ok'){
-      this.ip = publicIP+'*'+localIP;
-      console.log('mqtt');
+    // if(localIP && status =='ok'){
+    if(status=='ok'){
+      this.ip = '118.163.93.211*192.168.0.104';
+      // this.ip = publicIP+'*'+localIP;
+      console.log('ip:',this.ip)
+      // console.log('mqtt');
       this.subscribe_topic = "handwash/#";
       this.$mqtt.subscribe(this.subscribe_topic);
     }
@@ -179,7 +160,7 @@ export default {
     'handwash/#' (data, topic) {
       this.object = JSON.parse(data)
       // console.log('topic: ', topic, ' this.object: ', this.object)
-      if (topic === "handwash/" + this.ip + "/temp") {
+      if (topic === "handwash/temp_svr_page/" + this.ip) {
         let tempObj = JSON.parse(data)
         // console.log('tempdata',tempObj);
         this.temp_obj = tempObj;
@@ -259,9 +240,9 @@ export default {
   }
   .marquee{
     color:whitesmoke;
-    font-size: 4.5em;
+    font-size: 8em;
     vertical-align:bottom;
-    padding-top:65px;
+    padding-top:100px;
     padding-bottom:15px;
   }
   .temp-state{
@@ -269,8 +250,5 @@ export default {
     letter-spacing: 2px; 
     font-weight:500;
   }
-  .temp_card{
-    width: 250px; 
-    opacity:0.7;
-  }
+  
 </style>
